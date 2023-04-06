@@ -1,0 +1,23 @@
+CREATE TABLE RESERVATION
+(PNR NUMBER(3), NAME VARCHAR(30), SEAT NUMBER(2));
+INSERT INTO RESERVATION (PNR,NAME,SEAT)
+VALUES(1,'RAJDEEP GHOSH',8);
+INSERT INTO RESERVATION (PNR,NAME,SEAT)
+VALUES(5,'SAIKAT SHEET',24);
+INSERT INTO RESERVATION (PNR,NAME,SEAT)
+VALUES(9,'ANKIT PAL',19);
+INSERT INTO RESERVATION (PNR,NAME,SEAT)
+VALUES(11,'ANIQUE JANA',35);
+
+create table reserv
+(pnr number(30), name varchar2(30), seat number(3));
+
+create or replace procedure cancel(x in number)
+as
+row reservation%rowtype;
+begin
+select *into row from reservation where pnr=x;
+insert into reserv(pnr,name,seat)
+values(row.pnr,row.name,row.seat);
+delete from reservation where pnr=x;
+end;

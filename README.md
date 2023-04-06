@@ -1,0 +1,19 @@
+# Project Title
+
+B.Tech all Lab assignments
+
+# Project Description
+
+All lab assignments of my 4 year B.Tech is present in this repository
+
+## Contents
+
+- DSA
+- ANALOG AND DIGITAL ELECTRONICS LAB
+- COMPUTER ARCHITECTURE LAB
+- COMPUTER NETWORKS LAB
+- DBMS LAB
+- DESIGN & ANALYSIS OF ALGORITHMS LAB
+- OBJECT ORIENTED PROGRAMMING LAB
+- OPERATING SYSTEMS LAB
+- SOFTWARE ENGINEERING LAB

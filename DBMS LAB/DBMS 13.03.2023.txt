@@ -1,0 +1,128 @@
+=======> CREATE TABLE Job(
+    	   UserID int,
+         Salary int,
+         FirstName varchar(20),
+         Post varchar(20),
+         Address varchar(20),
+         Gender varchar(20),
+         City varchar(20)
+         );
+
+
+=======>  INSERT INTO Job(UserID,Salary,FirstName,Post,Address,Gender,City)
+	    VALUES(1,48000,'Sanjay','Clerk','Das','Male','HWH')
+
+=======>  INSERT INTO Job(UserID,Salary,FirstName,Post,Address,Gender,City)
+	    VALUES(2,24000,'Arnab','Analyst','Kona','Male','HWH')
+
+=======>  INSERT INTO Job(UserID,Salary,FirstName,Post,Address,Gender,City)
+	    VALUES(3,36000,'Priya','Manager','Icchapur','Female','KOL')
+
+=======>  INSERT INTO Job(UserID,Salary,FirstName,Post,Address,Gender,City)
+	    VALUES(4,40000,'Somnath','Salesman','Saltlake','Male','KOL')
+
+=======>  INSERT INTO Job(UserID,Salary,FirstName,Post,Address,Gender,City)
+	    VALUES(5,42000,'Swati','President','Behala','Female','KOL')
+
+
+========>   Declaring function:
+
+            create or replace function Job1
+		return number is total number(3);
+		begin
+		select count(*) into total from Job;
+		return total;
+		end;
+
+		Fetching:
+
+		set serveroutput on
+		declare
+		k number(3);
+		begin
+		k := Job1();
+		dbms_output.put_line(k);
+		end;
+
+		Output:
+     
+		5
+		PL/SQL procedure successfully completed.
+
+=========>  no of male and female
+		
+		Male:
+		Declaring: 
+		
+		create or replace function techno
+		return number is total number(3);
+		begin
+		select count(*) into total from Job where Gender='Male';
+		return total;
+		end;
+
+		Fetching:
+
+		set serveroutput on
+		declare
+		k number(3);
+		begin
+		k := techno();
+		dbms_output.put_line(k);
+		end; 
+
+		Output:
+
+		3
+		PL/SQL procedure successfully completed.
+
+		Female:
+		Declaring: 
+
+		create or replace function techno
+		return number is total number(3);
+		begin
+		select count(*) into total from Job where Gender='Female';
+		return total;
+		end;
+
+		Fetching:
+
+		set serveroutput on
+		declare
+		k number(3);
+		begin
+		k := techno();
+		dbms_output.put_line(k);
+		end;
+
+		Output:
+
+		1
+		PL/SQL procedure successfully completed.
+
+==========>  Group by Salary:
+
+		Female:
+		Declaring:
+
+		create or replace function techno
+		return number is total number(5);
+		begin
+		select sum(Salary) into total from Job group by Gender having 
+		Gender='Female';
+		return total;
+		end;
+
+		Fetching:
+
+		set serveroutput on
+		declare
+		k number(5);
+		begin
+		k := techno();
+		dbms_output.put_line(k);
+		end;
+		
+		
+		

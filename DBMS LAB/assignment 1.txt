@@ -1,0 +1,58 @@
+1.create table student(id number(5),name varchar(20),branch varchar(10))
+
+2.insert into student(id,name,branch)
+values(1,'SWAGATA','CSE')
+insert into student(id,name,branch)
+values(2,'SOUMITA','CSE')
+insert into student(id,name,branch)
+values(3,'DIYA','ECE')
+insert into student(id,name,branch)
+values(4,'DISHA','AIML')
+insert into student(id,name,branch)
+values(5,'DISHANT','BCA')
+
+3.ALTER TABLE student
+RENAME COLUMN ID TO ROLL
+
+4.ALTER TABLE student
+ADD AGE NUMBER
+ALTER TABLE student ADD ADDRESS VARCHAR(20) DEFAULT 'TINT';
+
+5.UPDATE student SET AGE=20 where roll=1
+UPDATE student SET AGE=15 where roll=2
+UPDATE student SET AGE=22 where roll=3
+UPDATE student SET AGE=24 where roll=4
+UPDATE student SET AGE=19 where roll=5
+
+6.ALTER TABLE student ADD PRIMARY KEY(ROLL)
+
+7.ALTER TABLE student MODIFY NAME NOT NULL
+
+8.ALTER TABLE student
+ADD MARKS NUMBER
+UPDATE student SET MARKS=90 where roll=1
+UPDATE student SET MARKS=80 where roll=2
+UPDATE student SET MARKS=75 where roll=3
+UPDATE student SET MARKS=45 where roll=4
+UPDATE student SET MARKS=30 where roll=5
+
+9.select * from student where MARKS>=50
+
+10.DELETE FROM student WHERE MARKS<50
+
+11.ALTER TABLE student
+DROP COLUMN ADDRESS
+
+12.CREATE TABLE emp2 AS SELECT *  FROM emp;
+
+13.SELECT * FROM emp2
+
+14.select SAL,ENAME from emp2 WHERE SAL>1000
+
+15.select COUNT(*) from emp where SAL>=1000 AND SAL<=3000
+
+16.ALTER TABLE emp2
+ADD SAL_HIKE NUMBER
+UPDATE emp2 SET SAL_HIKE=SAL +1000 where SAL=1250 or SAL=950
+
+17.SALARY INCREMENT
