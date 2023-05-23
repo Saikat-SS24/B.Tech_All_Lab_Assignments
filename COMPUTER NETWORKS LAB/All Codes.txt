@@ -1,0 +1,1086 @@
+>> IPC >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+// RCV.c
+
+#include <stdio.h>
+#include <sys/ipc.h>
+#include <sys/types.h>
+#include <string.h>
+#include <stdlib.h>
+
+#define LEN 100
+
+void die(char *s)
+{
+    perror(s);
+    exit(1);
+}
+
+struct msgbuf
+{
+    float mtype;
+    char mtext[LEN];
+};
+
+int main()
+{
+    int msgid;
+    struct msgbuf rbuf;
+    rbuf.mtype = 1;
+    key_t key = 1234;
+    msgid = msgget(key, 0666);
+    if (msgrcv(msgid, &rbuf, LEN, 1, 0) < 0)
+        die("msgrcv");
+    puts(rbuf.mtext);
+    return 0;
+}
+
+// SND.c
+
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+#define LEN 100
+
+void die(char *s)
+{
+    perror(s);
+    exit(1);
+}
+
+struct msgbuf
+{
+    long mtype;
+    char mtext[LEN];
+};
+
+int main()
+{
+    key_t key = 1234;
+    int msgid;
+    int msgflg = IPC_CREAT | 0666;
+    if ((msgid = msgget(key, msgflg)) < 0) // Get the message queue ID for the given key
+        die("msgget");
+    struct msgbuf sbuf;
+    size_t buflen = 0;
+    char string[LEN] = "Hagu";
+    for (int j = 0; j < strlen(string); j++)
+    {
+        sbuf.mtext[buflen + j] = string[j];
+    }
+    buflen += strlen(string) + 1;
+    sbuf.mtype = 1;
+    strcpy(sbuf.mtext, string);
+    if (msgsnd(msgid, &sbuf, buflen, IPC_NOWAIT) < 0)
+    {
+        printf("%d, %d, %s, %d\n", msgid, sbuf.mtype, sbuf.mtext, buflen);
+    }
+    else
+        printf("Message Sent\n");
+    exit(0);
+}
+
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+>> CRC >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+#include <stdio.h>
+#include <string.h>
+
+int main(void) {
+    int dat_size, div_size;
+    char input[100], quot[100], key[30], rem[30], temp[30], key1[30];
+
+    // Input
+    printf("Enter the data: ");
+    scanf("%s", input);
+    printf("Enter the key: ");
+    scanf("%s", key);
+    dat_size = strlen(input);
+    div_size = strlen(key);
+
+    // Padding
+    for (int i = 0; i < div_size - 1; i++) {
+        input[dat_size + i] = '0';
+    }
+
+    // Temporarily store the initial bits of the input data
+    for (int i = 0; i < div_size; i++) {
+        temp[i] = input[i];
+    }
+
+    strcpy(key1, key); // Copying the key
+
+    // XOR
+    for (int i = 0; i < dat_size; i++) {
+        quot[i] = temp[0];
+        if (quot[i] == '0') {
+            for (int j = 0; j < div_size; j++) {
+                key[j] = '0';
+            }
+        } else {
+            for (int j = 0; j < div_size; j++) {
+                key[j] = key1[j];
+            }
+        }
+        for (int j = div_size - 1; j > 0; j--) {
+            if (key[j] == temp[j]) {
+                rem[j - 1] = '0';
+            } else {
+                rem[j - 1] = '1';
+            }
+        }
+        rem[div_size - 1] = input[i + div_size];
+        strcpy(temp, rem);
+    }
+    strcpy(rem, temp);
+
+    printf("\nThe remainder is: ");
+    for (int i = 0; i < div_size; i++) {
+        printf("%c", rem[i]);
+    }
+
+    printf("\nNew Data is: ");
+    for (int i = 0; i < dat_size; i++) {
+        printf("%c", input[i]);
+    }
+    for (int i = 0; i < div_size; i++) {
+        printf("%c", rem[i]);
+    }
+
+    return 0;
+}
+
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+>> TCP >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+// client.c
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h> 
+ 
+void error(const char *msg) {
+    perror(msg);
+    exit(0);
+}
+ 
+int main(int argc, char *argv[]) {
+    int sock_file_descriptor;
+    int server_sock_port_no;
+    int data_length;
+    struct sockaddr_in server_address;
+    struct hostent *server;
+    char buff[256];
+ 
+    if (argc < 3) {
+        fprintf(stderr, "Usage: %s hostname port\n", argv[0]);
+        exit(0);
+    }
+ 
+    server_sock_port_no = atoi(argv[2]);
+ 
+    sock_file_descriptor = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock_file_descriptor < 0)
+        error("Error opening socket");
+ 
+    server = gethostbyname(argv[1]);
+    if (server == NULL)
+        error("Error, no such host\n");
+ 
+    bzero((char *) &server_address, sizeof(server_address));
+ 
+    server_address.sin_family = AF_INET;
+    bcopy((char *) server->h_addr, (char *)&server_address.sin_addr.s_addr, server->h_length);
+    server_address.sin_port = htons(server_sock_port_no);
+ 
+    if (connect(sock_file_descriptor, (struct sockaddr *) &server_address, sizeof(server_address)) < 0)
+        error("Error in connecting...");
+ 
+    printf("Please enter the message: ");
+    /* reset the buffer */
+    bzero(buff, 256);
+ 
+    /* read the data from standard input */
+    fgets(buff, 255, stdin);
+ 
+    /* send the content of buffer to server */
+    data_length = write(sock_file_descriptor, buff, strlen(buff));
+    if (data_length < 0)
+        error("Error in writing");
+ 
+    /* reset the buffer */
+    bzero(buff, 256);
+    /* read the content received from server */
+    data_length = read(sock_file_descriptor, buff, 255);
+    if (data_length < 0)
+        error("Error in reading");
+    printf("%s\n", buff);
+ 
+    close(sock_file_descriptor);
+    return 0;
+}
+
+// server.c 
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h> 
+#include <sys/socket.h>
+#include <netinet/in.h>
+ 
+void error(const char *msg) {
+    perror(msg);
+    exit(1);
+}
+ 
+int main(int argc, char *argv[]) {
+    int sock_file_descriptor;                           // socket file descriptor
+    int client_sock_file_descriptor;                // client socket file descriptor
+    int server_sock_port_no;            // port number
+    socklen_t client_socket_length;     // client socket length
+    char buff[256];                     // buffer
+    struct sockaddr_in server_address;  // address of this server
+    struct sockaddr_in client_address;  // address of a client
+    int max_queue_len_4_pending_conn = 5;   // maximum length for the queue of pending connections
+    int data_length;
+ 
+    if (argc < 2)
+        error("Error!\n This program requires port number as command line argument.");
+ 
+    sock_file_descriptor = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock_file_descriptor < 0)
+        error("Unable to open socket.....");
+ 
+    /* set all the bits of server_address by 0 (zero) */
+    bzero((char *) &server_address, sizeof(server_address));
+ 
+    /* convert the string to integer and set the value to vaiable server_sock_port_no */
+    server_sock_port_no = atoi(argv[1]);
+ 
+    /* prepare server_address variable */
+    server_address.sin_family = AF_INET;
+    server_address.sin_addr.s_addr = INADDR_ANY;
+    server_address.sin_port = htons(server_sock_port_no);
+ 
+    /* bind function returns negative number if there is any error */
+    if (bind(sock_file_descriptor, (struct sockaddr *) &server_address, sizeof(server_address)) < 0)
+        error("Error in Binding");
+ 
+    /* this function returns 0 on success and -1 on failure */
+    listen(sock_file_descriptor, max_queue_len_4_pending_conn);
+ 
+    client_socket_length = sizeof(client_address);
+ 
+    /* accept function is used to accept a connection request on the server socket socket.
+     * The return value of accept is the file descriptor for the new socket.
+     * After accept, the original socket socket remains open and unconnected,
+     * and continues listening until you close it. */
+    client_sock_file_descriptor = accept(sock_file_descriptor, (struct sockaddr *) &client_address, &client_socket_length);
+ 
+    if (client_sock_file_descriptor < 0)
+        error("Unable to accept");
+ 
+    /* reset the buffer */
+    bzero(buff, 256);
+ 
+    /* read the data sent by client */
+    data_length = read(client_sock_file_descriptor, buff, sizeof(buff));
+    if (data_length < 0)
+        error("Error in reading data");
+    printf("Here is the message: %s\n", buff);
+ 
+    /* write the data for the client */
+    data_length = write(client_sock_file_descriptor, buff, sizeof(buff));
+    if (data_length < 0)
+        error("Error in writing data");
+ 
+    close(client_sock_file_descriptor);
+    close(sock_file_descriptor);
+    return 0;
+}
+
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+>> UDP >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+// client.c
+
+#include <string.h>
+#include <sys/types.h>
+#include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+ 
+int main(void) {
+    int sock_file_descriptor;
+    int sent_data_length;
+    int received_data_length;
+ 
+    unsigned int server_address_len;
+    unsigned short server_port = 5000;
+    char server_ip[] = "127.0.0.1";
+    char text[] = "Hello";
+    char buffer[256];
+    struct sockaddr_in server_address;
+ 
+    server_address_len = sizeof(server_address);
+    bzero(&server_address, sizeof(server_address));
+    server_address.sin_family = PF_INET;
+    server_address.sin_port = htons(server_port);
+ 
+    inet_aton(server_ip, &server_address.sin_addr);
+ 
+    sock_file_descriptor = socket(PF_INET, SOCK_DGRAM, 0);
+ 
+    /* send text to server */
+    sent_data_length = sendto(sock_file_descriptor, text, strlen(text), 0, (struct sockaddr *) &server_address, sizeof(server_address));
+    if (sent_data_length != -1)
+        printf("\n* message sent successfully *\n");
+    else
+        printf("\n* message sent failure *\n");
+ 
+    /* receive data from server */
+    received_data_length = recvfrom(sock_file_descriptor, buffer, strlen(buffer), 0, (struct sockaddr *) &server_address, &server_address_len);
+    if (received_data_length != -1) {
+        buffer[received_data_length] = '\0';
+        printf("\n* %s *\n", buffer);
+    }
+ 
+    close(sock_file_descriptor);
+    return 0;
+}
+
+// server.c
+
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+ 
+int main(void) {
+    int received_data_length;
+    int sent_data_length;
+    int client_address_length;
+    int server_port = 5000;
+    short sock_file_descriptor;
+    char server_ip[] = "127.0.0.1";
+    char buffer[256];
+    char *client;
+    struct sockaddr_in server_address;
+    struct sockaddr_in client_address;
+ 
+    fflush(stdin);
+    client = (char *) malloc(sizeof(server_address));
+ 
+    sock_file_descriptor = socket(PF_INET, SOCK_DGRAM, 0);
+    if (sock_file_descriptor < 0) {
+        printf("failed");
+        exit(1);
+    } else {
+        printf("socket created");
+    }
+ 
+    bzero(&server_address, sizeof(server_address));
+    server_address.sin_family = PF_INET;
+    inet_aton(server_ip, &server_address.sin_addr);
+    server_address.sin_port = htons(server_port);
+ 
+    bind(sock_file_descriptor, (struct sockaddr *) &server_address, sizeof(server_address));
+ 
+    received_data_length = recvfrom(sock_file_descriptor, buffer, strlen(buffer), 0, (struct sockaddr *) &client_address, &client_address_length);
+    fflush(stdout);
+    if (received_data_length != -1)
+        printf("\n* receive success *\n");
+    else
+        printf("\n* receive failure *\n");
+ 
+    sent_data_length = sendto(sock_file_descriptor, buffer, received_data_length, 0, (struct sockaddr *) &client_address, sizeof(client_address));
+    if (sent_data_length != -1)
+        printf("\n* send success *\n");
+    else
+        printf("\n* send failure *\n");
+ 
+    close(sock_file_descriptor);
+    return 0;
+}
+
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+>> Expression TCP >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+// client.c
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <ctype.h> 
+
+void error(const char *msg) {
+    perror(msg);
+    exit(0);
+}
+ 
+int main(int argc, char *argv[]) {
+    int sock_file_descriptor;
+    int server_sock_port_no;
+    int data_length;
+    struct sockaddr_in server_address;
+    struct hostent *server;
+    char buff[256];
+ 
+    if (argc < 3) {
+        fprintf(stderr, "Usage: %s hostname port\n", argv[0]);
+        exit(0);
+    }
+ 
+    server_sock_port_no = atoi(argv[2]);
+ 
+    sock_file_descriptor = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock_file_descriptor < 0)
+        error("Error opening socket");
+ 
+    server = gethostbyname(argv[1]);
+    if (server == NULL)
+        error("Error, no such host\n");
+ 
+    bzero((char *) &server_address, sizeof(server_address));
+ 
+    server_address.sin_family = AF_INET;
+    bcopy((char *) server->h_addr, (char *)&server_address.sin_addr.s_addr, server->h_length);
+    server_address.sin_port = htons(server_sock_port_no);
+ 
+    if (connect(sock_file_descriptor, (struct sockaddr *) &server_address, sizeof(server_address)) < 0)
+        error("Error in connecting...");
+ 
+    printf("Enter the postfix expression terminated by '$'\n");
+    /* reset the buffer */
+    bzero(buff, 256);
+ 
+    /* read the data from standard input */
+    fgets(buff, 255, stdin);
+ 
+    /* send the content of buffer to server */
+    data_length = write(sock_file_descriptor, buff, strlen(buff));
+    if (data_length < 0)
+        error("Error in writing");
+ 
+    /* reset the buffer */
+    bzero(buff, 256);
+    /* read the content received from server */
+    data_length = read(sock_file_descriptor, buff, 255);
+    if (data_length < 0)
+        error("Error in reading");
+    printf("Expression sent\n");
+ 
+    close(sock_file_descriptor);
+    return 0;
+}
+
+// server.c
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h> 
+#include <sys/socket.h>
+#include <netinet/in.h>
+ 
+#define MAXSTACK 100
+#define POSTFIXSIZE 100
+int stack[MAXSTACK];
+int top = -1;
+void push(int item)
+{
+
+    if (top >= MAXSTACK - 1) {
+        printf("stack over flow");
+        return;
+    }
+    else {
+        top = top + 1;
+        stack[top] = item;
+    }
+}
+
+int pop()
+{
+    int item;
+    if (top < 0) {
+        printf("stack under flow");
+    }
+    else {
+        item = stack[top];
+        top = top - 1;
+        return item;
+    }
+}
+
+void evaluate_postfix(char postfix[])
+{
+
+    int i;
+    char ch;
+    int val;
+    int A, B;
+
+    for (i = 0; postfix[i] != '$'; i++) {
+        ch = postfix[i];
+        if (isdigit(ch)) {
+            push(ch - '0');
+        }
+        else if (ch == '+' || ch == '-' || ch == '*' || ch == '/') {
+            A = pop();
+            B = pop();
+            switch (ch)
+            {
+                case '*':
+                    val = B * A;
+                    break;
+                case '/':
+                    val = B / A;
+                    break;
+                case '+':
+                    val = B + A;
+                    break;
+                case '-':
+                    val = B - A;
+                    break;
+            }
+            push(val);
+        }
+    }
+    printf(" \n Result: %d \n", pop());
+}
+
+void error(const char *msg) {
+    perror(msg);
+    exit(1);
+}
+ 
+int main(int argc, char *argv[]) {
+    int sock_file_descriptor;                           // socket file descriptor
+    int client_sock_file_descriptor;                // client socket file descriptor
+    int server_sock_port_no;            // port number
+    socklen_t client_socket_length;     // client socket length
+    char buff[256];                     // buffer
+    struct sockaddr_in server_address;  // address of this server
+    struct sockaddr_in client_address;  // address of a client
+    int max_queue_len_4_pending_conn = 5;   // maximum length for the queue of pending connections
+    int data_length;
+ 
+    if (argc < 2)
+        error("Error!\n This program requires port number as command line argument.");
+ 
+    sock_file_descriptor = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock_file_descriptor < 0)
+        error("Unable to open socket.....");
+ 
+    /* set all the bits of server_address by 0 (zero) */
+    bzero((char *) &server_address, sizeof(server_address));
+ 
+    /* convert the string to integer and set the value to vaiable server_sock_port_no */
+    server_sock_port_no = atoi(argv[1]);
+ 
+    /* prepare server_address variable */
+    server_address.sin_family = AF_INET;
+    server_address.sin_addr.s_addr = INADDR_ANY;
+    server_address.sin_port = htons(server_sock_port_no);
+ 
+    /* bind function returns negative number if there is any error */
+    if (bind(sock_file_descriptor, (struct sockaddr *) &server_address, sizeof(server_address)) < 0)
+        error("Error in Binding");
+ 
+    /* this function returns 0 on success and -1 on failure */
+    listen(sock_file_descriptor, max_queue_len_4_pending_conn);
+ 
+    client_socket_length = sizeof(client_address);
+ 
+    /* accept function is used to accept a connection request on the server socket socket.
+     * The return value of accept is the file descriptor for the new socket.
+     * After accept, the original socket socket remains open and unconnected,
+     * and continues listening until you close it. */
+    client_sock_file_descriptor = accept(sock_file_descriptor, (struct sockaddr *) &client_address, &client_socket_length);
+ 
+    if (client_sock_file_descriptor < 0)
+        error("Unable to accept");
+ 
+    /* reset the buffer */
+    bzero(buff, 256);
+ 
+    /* read the data sent by client */
+    data_length = read(client_sock_file_descriptor, buff, sizeof(buff));
+    if (data_length < 0)
+        error("Error in reading data");
+    
+    evaluate_postfix(buff);
+ 
+    /* write the data for the client */
+    data_length = write(client_sock_file_descriptor, buff, sizeof(buff));
+    if (data_length < 0)
+        error("Error in writing data");
+ 
+    close(client_sock_file_descriptor);
+    close(sock_file_descriptor);
+    return 0;
+}
+
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+>> Expression UDP >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+// client.c
+
+#include <string.h>
+#include <sys/types.h>
+#include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+ 
+int main(void) {
+    int sock_file_descriptor;
+    int sent_data_length;
+    int received_data_length;
+ 
+    unsigned int server_address_len;
+    unsigned short server_port = 5000;
+    char server_ip[] = "127.0.0.1";
+    char text[] = "234*+5+$";
+    char buffer[256];
+    struct sockaddr_in server_address;
+ 
+    server_address_len = sizeof(server_address);
+    bzero(&server_address, sizeof(server_address));
+    server_address.sin_family = PF_INET;
+    server_address.sin_port = htons(server_port);
+ 
+    inet_aton(server_ip, &server_address.sin_addr);
+ 
+    sock_file_descriptor = socket(PF_INET, SOCK_DGRAM, 0);
+ 
+    /* send text to server */
+    sent_data_length = sendto(sock_file_descriptor, text, strlen(text), 0, (struct sockaddr *) &server_address, sizeof(server_address));
+    if (sent_data_length != -1)
+        printf("\n* message sent successfully *\n");
+    else
+        printf("\n* message sent failure *\n");
+ 
+    /* receive data from server */
+    received_data_length = recvfrom(sock_file_descriptor, buffer, strlen(buffer), 0, (struct sockaddr *) &server_address, &server_address_len);
+    if (received_data_length != -1) {
+        buffer[received_data_length] = '\0';
+        printf("\n* %s *\n", buffer);
+    }
+ 
+    close(sock_file_descriptor);
+    return 0;
+}
+
+// server.c
+
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+ 
+#define MAXSTACK 100
+#define POSTFIXSIZE 100
+int stack[MAXSTACK];
+int top = -1;
+void push(int item)
+{
+
+    if (top >= MAXSTACK - 1) {
+        printf("stack over flow");
+        return;
+    }
+    else {
+        top = top + 1;
+        stack[top] = item;
+    }
+}
+
+int pop()
+{
+    int item;
+    if (top < 0) {
+        printf("stack under flow");
+    }
+    else {
+        item = stack[top];
+        top = top - 1;
+        return item;
+    }
+}
+
+void evaluate_postfix(char postfix[])
+{
+    int i;
+    char ch;
+    int val;
+    int A, B;
+
+    for (i = 0; postfix[i] != '$'; i++) {
+        ch = postfix[i];
+        if (isdigit(ch)) {
+            push(ch - '0');
+        }
+        else if (ch == '+' || ch == '-' || ch == '*' || ch == '/') {
+            A = pop();
+            B = pop();
+            switch (ch)
+            {
+                case '*':
+                    val = B * A;
+                    break;
+                case '/':
+                    val = B / A;
+                    break;
+                case '+':
+                    val = B + A;
+                    break;
+                case '-':
+                    val = B - A;
+                    break;
+            }
+            push(val);
+        }
+    }
+    printf(" \n Result: %d \n", pop());
+}
+
+int main(void) {
+    int received_data_length;
+    int sent_data_length;
+    int client_address_length;
+    int server_port = 5000;
+    short sock_file_descriptor;
+    char server_ip[] = "127.0.0.1";
+    char buffer[256];
+    char *client;
+    struct sockaddr_in server_address;
+    struct sockaddr_in client_address;
+ 
+    fflush(stdin);
+    client = (char *) malloc(sizeof(server_address));
+ 
+    sock_file_descriptor = socket(PF_INET, SOCK_DGRAM, 0);
+    if (sock_file_descriptor < 0) {
+        printf("failed");
+        exit(1);
+    } else {
+        printf("socket created");
+    }
+ 
+    bzero(&server_address, sizeof(server_address));
+    server_address.sin_family = PF_INET;
+    inet_aton(server_ip, &server_address.sin_addr);
+    server_address.sin_port = htons(server_port);
+ 
+    bind(sock_file_descriptor, (struct sockaddr *) &server_address, sizeof(server_address));
+ 
+    received_data_length = recvfrom(sock_file_descriptor, buffer, strlen(buffer), 0, (struct sockaddr *) &client_address, &client_address_length);
+    fflush(stdout);
+    if (received_data_length != -1)
+        printf("\n* receive success *\n");
+    else
+        printf("\n* receive failure *\n");
+    evaluate_postfix(buffer);
+ 
+    sent_data_length = sendto(sock_file_descriptor, buffer, received_data_length, 0, (struct sockaddr *) &client_address, sizeof(client_address));
+    if (sent_data_length != -1)
+        printf("\n* send success *\n");
+    else
+        printf("\n* send failure *\n");
+ 
+    close(sock_file_descriptor);
+    return 0;
+}
+
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+>> CRC socket >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+// client.c
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+
+int main()
+{
+    int sockfd;
+    struct sockaddr_un serv_addr;
+    char buffer[256];
+    int n;
+
+    sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (sockfd < 0)
+    {
+        perror("ERROR opening socket");
+        exit(1);
+    }
+
+    bzero((char *)&serv_addr, sizeof(serv_addr));
+    serv_addr.sun_family = AF_UNIX;
+    strcpy(serv_addr.sun_path, "server_socket");
+    if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        perror("ERROR connecting");
+        exit(1);
+    }
+
+    printf("Enter Data Word: ");
+    bzero(buffer, 256);
+    fgets(buffer, 255, stdin);
+    buffer[strcspn(buffer, "\n")] = '\0';
+
+    n = write(sockfd, buffer, strlen(buffer));
+    if (n < 0)
+    {
+        perror("ERROR writing to socket");
+        exit(1);
+    }
+
+    printf("Enter Divisor: ");
+    bzero(buffer, 256);
+    fgets(buffer, 255, stdin);
+    buffer[strcspn(buffer, "\n")] = '\0';
+
+    n = write(sockfd, buffer, strlen(buffer));
+    if (n < 0)
+    {
+        perror("ERROR writing to socket");
+        exit(1);
+    }
+
+    bzero(buffer, 256);
+    n = read(sockfd, buffer, 255);
+    if (n < 0)
+    {
+        perror("ERROR reading from socket");
+        exit(1);
+    }
+
+    printf("CRC Code Word: %s\n", buffer);
+
+    close(sockfd);
+
+    return 0;
+}
+
+// server.c
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+
+unsigned int crc_calculation(char data[], char divisor[])
+{
+    int data_length = strlen(data);
+    int divisor_length = strlen(divisor);
+    unsigned int remainder = 0;
+
+    for (int i = 0; i < data_length; i++)
+    {
+        if (remainder & (1 << (divisor_length - 1)))
+        {
+            remainder = (remainder << 1) ^ strtol(divisor, NULL, 2);
+        }
+        else
+        {
+            remainder = (remainder << 1);
+        }
+        remainder ^= (data[i] - '0');
+    }
+
+    return remainder;
+}
+
+int main()
+{
+    int sockfd, newsockfd;
+    socklen_t clilen;
+    char buffer[256];
+    struct sockaddr_un serv_addr, cli_addr;
+    int n;
+
+    sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (sockfd < 0)
+    {
+        perror("ERROR opening socket");
+        exit(1);
+    }
+
+    bzero((char *)&serv_addr, sizeof(serv_addr));
+    serv_addr.sun_family = AF_UNIX;
+    strcpy(serv_addr.sun_path, "server_socket");
+    if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        perror("ERROR on binding");
+        exit(1);
+    }
+
+    listen(sockfd, 5);
+    clilen = sizeof(cli_addr);
+
+    newsockfd = accept(sockfd, (struct sockaddr *)&cli_addr, &clilen);
+    if (newsockfd < 0)
+    {
+        perror("ERROR on accept");
+        exit(1);
+    }
+
+    bzero(buffer, 256);
+    n = read(newsockfd, buffer, 255);
+    if (n < 0)
+    {
+        perror("ERROR reading from socket");
+        exit(1);
+    }
+    printf("Data Word: %s\n", buffer);
+    char data[256];
+    strcpy(data, buffer);
+
+    bzero(buffer, 256);
+    n = read(newsockfd, buffer, 255);
+    if (n < 0)
+    {
+        perror("ERROR reading from socket");
+        exit(1);
+    }
+    printf("Divisor: %s\n", buffer);
+    char divisor[256];
+    strcpy(divisor, buffer);
+
+    unsigned int code_word = crc_calculation(data, divisor);
+    printf("Code Word: %u\n", code_word);
+
+    bzero(buffer, 256);
+    sprintf(buffer, "%u", code_word);
+    n = write(newsockfd, buffer, strlen(buffer));
+    if (n < 0)
+    {
+        perror("ERROR writing to socket");
+        exit(1);
+    }
+
+    close(newsockfd);
+    close(sockfd);
+    unlink("server_socket");
+
+    return 0;
+}
+
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<W
+RMI
+
+
+ CalculatorIntf.java
+
+import java.rmi.*;  
+public interface CalculatorIntf extends Remote{  
+        public int add(int num1,int num2)throws RemoteException;
+        public int sub(int num1,int num2)throws RemoteException;
+        public int mul(int num1,int num2)throws RemoteException;
+        public int div(int num1,int num2)throws RemoteException;  
+}
+
+Calculator.java
+
+import java.rmi.*;  
+import java.rmi.server.*;  
+public class Calculator extends UnicastRemoteObject implements CalculatorIntf{  
+
+        public Calculator() throws RemoteException{
+        }
+        public int add(int num1, int num2){
+                return num1 + num2;
+        }
+        public int sub(int num1, int num2){
+                return num1 - num2;
+        }
+        public int mul(int num1, int num2){
+                return num1 * num2;
+        }
+        public int div(int num1, int num2){
+                return num1 / num2;
+        }
+}
+
+MyServer.java
+
+import java.rmi.*;
+import java.rmi.registry.*;  
+public class MyServer{
+    public static void main(String args[]){  
+        try{
+            CalculatorIntf stub = new Calculator();   
+            Naming.rebind("rmi://localhost:5000/cal", stub);  
+        } catch(Exception e){
+            System.out.println(e);
+        }
+    }
+}
+
+
+
+
+
+
+MyClient.java
+
+import java.rmi.*;
+public class MyClient{
+    public static void main(String args[]){                  
+        try{
+            CalculatorIntf stub = (CalculatorIntf) Naming.lookup("rmi://localhost:5000/cal");
+            System.out.println(stub.add(34,4));
+        } catch(Exception e){}
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
